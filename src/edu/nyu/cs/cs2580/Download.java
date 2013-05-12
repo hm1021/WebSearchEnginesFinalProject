@@ -28,22 +28,20 @@ public class Download {
 				aoos.write(line);
 				aoos.newLine();
 			}
-			
+
 			aoos.close();
 		} catch (MalformedURLException mue) {
-			mue.printStackTrace();
 		} catch (IOException ioe) {
-			ioe.printStackTrace();
+		} catch (Exception e) {
 		} finally {
 			try {
 				is.close();
-				
-			} catch (IOException ioe) {
+
+			} catch (Exception ioe) {
 				// nothing to see here
 			}
 		}
-		
-		
+
 	}
 
 }
