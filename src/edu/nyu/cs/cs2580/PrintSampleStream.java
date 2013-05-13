@@ -63,7 +63,7 @@ public final class PrintSampleStream {
 		Twitter unauthenticatedTwitter = new TwitterFactory(conf).getInstance();
 		// First param of Paging() is the page number, second is the number per
 		// page (this is capped around 200 I think.
-		Paging paging = new Paging(1, 50);
+		Paging paging = new Paging(6,200);
 		List<Status> statuses = unauthenticatedTwitter.getUserTimeline("cnnbrk",
 		    paging);
 
