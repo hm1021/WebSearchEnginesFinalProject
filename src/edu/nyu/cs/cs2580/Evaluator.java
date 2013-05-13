@@ -61,6 +61,7 @@ class Evaluator {
     while ((line = reader.readLine()) != null) {
       // Line format: query \t docid \t grade
       
+	@SuppressWarnings("resource")
 	Scanner s = new Scanner(line).useDelimiter("\t");
       String query = s.next();
       DocumentRelevances relevances = judgements.get(query);
@@ -83,6 +84,7 @@ class Evaluator {
     String line = null;
     while ((line = reader.readLine()) != null) {
      
+	@SuppressWarnings("resource")
 	Scanner s = new Scanner(line).useDelimiter("\t");
       String query = s.next();
       int docid = Integer.parseInt(s.next());
