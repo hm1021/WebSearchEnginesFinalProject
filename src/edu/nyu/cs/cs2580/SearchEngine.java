@@ -62,7 +62,7 @@ public class SearchEngine {
 
 		// The specific LogMiner to be used.
 		public String _logMinerType = null;
-		
+
 		public HashMap<String, Integer> _docMap = new HashMap<String, Integer>();
 
 		/**
@@ -159,7 +159,7 @@ public class SearchEngine {
 
 	// /// Main functionalities start
 
-	private static void startMining() throws IOException, NoSuchAlgorithmException {		
+	private static void startMining() throws IOException, NoSuchAlgorithmException {
 		CorpusAnalyzer analyzer = CorpusAnalyzer.Factory.getCorpusAnalyzerByOption(SearchEngine.OPTIONS);
 		Check(analyzer != null, "Analyzer " + SearchEngine.OPTIONS._corpusAnalyzerType + " not found!");
 		analyzer.prepare();
