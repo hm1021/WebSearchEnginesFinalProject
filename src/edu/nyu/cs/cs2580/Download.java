@@ -12,12 +12,12 @@ import java.net.URL;
 public class Download {
 
 	public static void downloadWebpage(String input, String absoluteFilePath) {
-		URL url;
+		URL url = null; 
 		InputStream is = null;
-		BufferedReader br;
-		String line;
+		BufferedReader br = null;
+		String line = null;
 
-		try {
+		try {			
 			url = new URL(input);
 			is = url.openStream(); // throws an IOException
 			br = new BufferedReader(new InputStreamReader(is));
@@ -31,6 +31,7 @@ public class Download {
 
 			aoos.close();
 		} catch (MalformedURLException mue) {
+			System.out.println("Not written in file");
 		} catch (IOException ioe) {
 		} catch (Exception e) {
 		} finally {
