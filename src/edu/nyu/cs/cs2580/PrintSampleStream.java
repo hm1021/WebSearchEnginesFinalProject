@@ -33,7 +33,6 @@ import twitter4j.TwitterFactory;
 import twitter4j.URLEntity;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
-import twitter4j.internal.org.json.JSONArray;
 
 /**
  * <p>
@@ -61,9 +60,10 @@ public final class PrintSampleStream {
 		    .build();
 
 		Twitter unauthenticatedTwitter = new TwitterFactory(conf).getInstance();
+		
 		// First param of Paging() is the page number, second is the number per
 		// page (this is capped around 200 I think.
-		Paging paging = new Paging(6,200);
+		Paging paging = new Paging(1, 50);
 		List<Status> statuses = unauthenticatedTwitter.getUserTimeline("cnnbrk",
 		    paging);
 
@@ -77,7 +77,7 @@ public final class PrintSampleStream {
 				System.out.println(status.getText());
 
 				String text = status.getText().replaceAll("\\p{Punct}", "")
-				    .replaceAll(" ", "_");
+				    .replaceAll(" ", "_").replaceAll("\n", "_");;
 
 				String fileName = text;
 				System.out.println("ID " + status.getId());
@@ -89,10 +89,10 @@ public final class PrintSampleStream {
 				int countSlash = getSlashCount(urls.getExpandedURL());
 				String features = status.getRetweetCount() + " " + freshness + " "
 				    + status.getUser().getFollowersCount() + " " + countSlash + " " + favoriteCount;
-//				DownloadTwitterFeatures.download(features, fileName);
-//
-//				Download.downloadWebpage(urls.getExpandedURL(), "C:/sem4/corpus/"
-//				    + fileName + ".html");
+				DownloadTwitterFeatures.download(features, fileName);
+
+				Download.downloadWebpage(urls.getExpandedURL(), "C:/sem4/corpus/"
+				    + fileName + ".html");
 				i++;
 			}
 		}
@@ -126,8 +126,6 @@ public final class PrintSampleStream {
 		Date old = currentDate;
 		old.setDate(currentDate.getDate() - 8);
 
-		// System.out.println(yesterdayDate);
-		// System.out.println(createdAt);
 		if (createdAt.before(currentDate) && createdAt.after(yesterdayDate)) {
 			return 10;
 		} else if (createdAt.before(yesterdayDate) && createdAt.after(daysBefore_3)) {
@@ -142,7 +140,6 @@ public final class PrintSampleStream {
 	}
 
 	public static int getFavoriteCount(long id) {
-		JSONArray array = null;
 		String commonUrl = "http://api.twitter.com/1/statuses/show.json?id=";
 		String finalUrl = commonUrl + id;
 		BufferedReader br = null;
@@ -154,12 +151,11 @@ public final class PrintSampleStream {
 			String jsonData = br.readLine();
 			twitter4j.internal.org.json.JSONObject status = new twitter4j.internal.org.json.JSONObject(
 			    jsonData);
-//			System.out.println(status.getInt("favorite_count"));
 			result = status.getInt("favorite_count");
 
 		} catch (Exception e) {
-//			e.printStackTrace();
-//			System.out.println("Inside Catch");
+
+			e.printStackTrace();
 		}
 		return result;
 	}
