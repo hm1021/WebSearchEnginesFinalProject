@@ -192,6 +192,7 @@ public class IndexerInvertedDoconly extends Indexer {
 		docIndexed.setUrl(eachFile.getPath());
 
 		String title = Parser.getTitle(eachFile);
+		
 		String newFile = Parser.parse(eachFile);
 		HashSet<String> stopWords = new HashSet<String>();
 		stopWords.add("the");

@@ -15,6 +15,22 @@ public class DocumentIndexed extends Document {
 	private HashMap<String, Integer> titleWordFrequency = new HashMap<String, Integer>();
 	private HashMap<String, Integer> bodyWordFrequency = new HashMap<String, Integer>();
 
+	public HashMap<String, Integer> getTitleWordFrequency() {
+		return titleWordFrequency;
+	}
+
+	public void setTitleWordFrequency(HashMap<String, Integer> titleWordFrequency) {
+		this.titleWordFrequency = titleWordFrequency;
+	}
+
+	public HashMap<String, Integer> getBodyWordFrequency() {
+		return bodyWordFrequency;
+	}
+
+	public void setBodyWordFrequency(HashMap<String, Integer> bodyWordFrequency) {
+		this.bodyWordFrequency = bodyWordFrequency;
+	}
+
 	public HashMap<String, Integer> getWordFrequency() {
 		return wordFrequency;
 	}

@@ -119,7 +119,16 @@ public class IndexerInvertedCompressed extends Indexer {
 				aoos.write(word + "\t");
 				aoos.write(wordFreq.get(word) + "\t");
 			}
-			aoos.write(docIndexed.getTotalWords() + "");
+			
+			HashMap<String, Integer> wordFreqTitle = docIndexed.getTitleWordFrequency();
+			for (String word : wordFreqTitle.keySet()) {
+				aoos.write(word + "\t");
+				aoos.write(wordFreqTitle.get(word) + "\t");
+			}
+			
+			aoos.write(docIndexed.getTotalWords() + "\t");
+			aoos.write(docIndexed.getTotalWordsInTitle() + "\t");
+			aoos.write(docIndexed.getTotalWordsInBody() + "");
 			aoos.newLine();
 		}
 		aoos.close();
@@ -352,19 +361,35 @@ public class IndexerInvertedCompressed extends Indexer {
 		stopWords.add("as");
 		stopWords.add("it");
 		stopWords.add("on");
-		
+
 		String title = Parser.getTitle(eachFile);
+		Analyzer analyzer_title = new EnglishAnalyzer(Version.LUCENE_30, stopWords);
+		List<String> titleWords = tokenize(analyzer_title.tokenStream("", new StringReader(title)));
+		docIndexed.setTotalWordsInTitle(titleWords.size());
+
+		for (String word : titleWords) {
+			if (word.length() == 1)
+				continue;
+
+			String stemmed = Stemmer.stemAWord(word).trim();
+			if (stemmed.matches("[A-Za-z0-9]+")) {
+				docIndexed.incrementTitleWordFrequency(word);
+			}
+		}
+
 		String newFile = Parser.parse(eachFile);
 		Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_30, stopWords);
 		List<String> words = tokenize(analyzer.tokenStream("", new StringReader(newFile)));
+		docIndexed.setTotalWordsInBody(words.size() - titleWords.size());
+
 		int i = 0;
 		for (String word : words) {
 			if (word.length() == 1)
 				continue;
-			docIndexed.incrementWordFrequency(word);
 
 			String stemmed = Stemmer.stemAWord(word).trim();
 			if (stemmed.matches("[A-Za-z0-9]+")) {
+				docIndexed.incrementWordFrequency(stemmed);
 				_totalTermFrequency++;
 				int hash = Math.abs(stemmed.hashCode()) % 199;
 				HashMap<String, WordAttribute_WordOccurrences> currMap = mapOfMaps[hash];
@@ -405,6 +430,7 @@ public class IndexerInvertedCompressed extends Indexer {
 
 		}
 		analyzer.close();
+		analyzer_title.close();
 		docIndexed.setTotalWords(words.size());
 		docMap.put(index, docIndexed);
 	}
@@ -536,25 +562,43 @@ public class IndexerInvertedCompressed extends Indexer {
 			String url = eachLine[2];
 			int numViews = Integer.parseInt(eachLine[3]);
 			float pageRank = Float.parseFloat(eachLine[4]);
-			long totalWords = Integer.parseInt(eachLine[eachLine.length - 1]);
+			long numWordsInTitle = Integer.parseInt(eachLine[eachLine.length - 2]);
+			long numWordsInBody = Integer.parseInt(eachLine[eachLine.length - 1]);
+			long totalWords = Integer.parseInt(eachLine[eachLine.length - 3]);
 			wa.setTitle(title);
 			wa.setUrl(url);
 			wa.setTotalWords(totalWords);
 			wa.setNumViews(numViews);
 			wa.setPageRank(pageRank);
+			wa.setTotalWordsInTitle(numWordsInTitle);
+			wa.setTotalWordsInBody(numWordsInBody);
 
 			HashMap<String, Integer> temp_map = new HashMap<String, Integer>();
 
 			int index = 5;
-			while (index < eachLine.length - 3) {
+			int i = 0;
+			while (i < totalWords) {
 				String temp_word = eachLine[index];
 				index++;
 				int temp_freq = Integer.parseInt(eachLine[index]);
 				index++;
+				i++;
 				temp_map.put(temp_word, temp_freq);
+			}
+			
+			HashMap<String, Integer> temp_mapTitle = new HashMap<String, Integer>();
+			i = 0;
+			while(i < numWordsInTitle) {
+				String temp_word = eachLine[index];
+				index++;
+				int temp_freq = Integer.parseInt(eachLine[index]);
+				index++;
+				i++;
+				temp_mapTitle.put(temp_word, temp_freq);
 			}
 
 			wa.setWordFrequency(temp_map);
+			wa.setTitleWordFrequency(temp_mapTitle);
 			docMap.put(did, wa);
 		}
 		ois.close();
@@ -781,10 +825,14 @@ public class IndexerInvertedCompressed extends Indexer {
 				String url = eachLine[2];
 				int numViews = Integer.parseInt(eachLine[3]);
 				float pageRank = Float.parseFloat(eachLine[4]);
+				long numWordsInTitle = Integer.parseInt(eachLine[eachLine.length - 2]);
+				long numWordsInBody = Integer.parseInt(eachLine[eachLine.length - 1]);
+
 
 				HashMap<String, Integer> temp_map = new HashMap<String, Integer>();
 
 				int index = 5;
+				int i = 0;
 				while (index < eachLine.length - 3) {
 					String temp_word = eachLine[index];
 					index++;
@@ -792,15 +840,30 @@ public class IndexerInvertedCompressed extends Indexer {
 					index++;
 					temp_map.put(temp_word, temp_freq);
 				}
+				
+				HashMap<String, Integer> temp_mapTitle = new HashMap<String, Integer>();
+				i = 0;
+				while(i < numWordsInTitle) {
+					String temp_word = eachLine[index];
+					index++;
+					int temp_freq = Integer.parseInt(eachLine[index]);
+					index++;
+					i++;
+					temp_mapTitle.put(temp_word, temp_freq);
+				}
 
-				int totalWords = Integer.parseInt(eachLine[eachLine.length - 1]);
-
+				int totalWords = Integer.parseInt(eachLine[eachLine.length - 3]);
+				
 				wa.setTitle(title);
 				wa.setUrl(url);
 				wa.setTotalWords(totalWords);
 				wa.setNumViews(numViews);
 				wa.setPageRank(pageRank);
 				wa.setWordFrequency(temp_map);
+				wa.setTotalWordsInTitle(numWordsInTitle);
+				wa.setTotalWordsInBody(numWordsInBody);
+				wa.setTitleWordFrequency(temp_mapTitle);
+				
 				docMap.put(docid, wa);
 			}
 			ois.close();
