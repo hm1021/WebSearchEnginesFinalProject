@@ -18,6 +18,10 @@ package edu.nyu.cs.cs2580;
 
 import java.util.List;
 
+<<<<<<< HEAD
+
+
+=======
 import twitter4j.Paging;
 import twitter4j.Status;
 import twitter4j.Twitter;
@@ -26,6 +30,7 @@ import twitter4j.TwitterFactory;
 import twitter4j.URLEntity;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
+>>>>>>> 5b6f59b4cc396145d49a2c4acf9d63a8244fe857
 /**
  * <p>
  * This is a code example of Twitter4J Streaming API - sample method support.<br>
