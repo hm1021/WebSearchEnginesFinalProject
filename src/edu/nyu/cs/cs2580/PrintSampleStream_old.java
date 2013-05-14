@@ -51,10 +51,10 @@ public final class PrintSampleStream_old {
 		Twitter unauthenticatedTwitter = new TwitterFactory(conf).getInstance();
 		// First param of Paging() is the page number, second is the number per
 		// page (this is capped around 200 I think.
-		Paging paging = new Paging(6, 200);
+		Paging paging = new Paging(1, 200);
 		List<Status> statuses = unauthenticatedTwitter.getUserTimeline("cnnbrk", paging);
 
-		int i = 1;
+//		int i = 1;
 		for (Status status : statuses) {
 			URLEntity[] entities = status.getURLEntities();
 			status.isFavorited();
@@ -69,7 +69,7 @@ public final class PrintSampleStream_old {
 
 				Download.downloadWebpage(urls.getExpandedURL(), "/Users/hiral/Documents/WSE/FinalProject/corpus/"
 						+ fileName + ".html");
-				i++;
+//				i++;
 			}
 		}
 

@@ -9,7 +9,11 @@ import java.util.HashMap;
 public class DocumentIndexed extends Document {
 	private static final long serialVersionUID = 9184892508124423115L;
 	private long _totalWords = 0;
+	private long _numWordsInTitle = 0;
+	private long _numWordsInBody = 0;
 	private HashMap<String, Integer> wordFrequency = new HashMap<String, Integer>();
+	private HashMap<String, Integer> titleWordFrequency = new HashMap<String, Integer>();
+	private HashMap<String, Integer> bodyWordFrequency = new HashMap<String, Integer>();
 
 	public HashMap<String, Integer> getWordFrequency() {
 		return wordFrequency;
@@ -31,8 +35,24 @@ public class DocumentIndexed extends Document {
 		this._totalWords = totalWords;
 	}
 
+	public long getTotalWordsInTitle() {
+		return _numWordsInTitle;
+	}
+
+	public void setTotalWordsInTitle(long totalWords) {
+		this._numWordsInTitle = totalWords;
+	}
+
+	public long getTotalWordsInBody() {
+		return _numWordsInBody;
+	}
+
+	public void setTotalWordsInBody(long totalWords) {
+		this._numWordsInBody = totalWords;
+	}
+
 	public void incrementWordFrequency(String word) {
-		
+
 		if (wordFrequency.containsKey(word)) {
 			int i = wordFrequency.get(word);
 			i++;
@@ -45,6 +65,42 @@ public class DocumentIndexed extends Document {
 	public int getWordFrequencyOf(String word) {
 		if (wordFrequency.containsKey(word))
 			return wordFrequency.get(word);
+		else
+			return 0;
+	}
+
+	public void incrementTitleWordFrequency(String word) {
+
+		if (titleWordFrequency.containsKey(word)) {
+			int i = titleWordFrequency.get(word);
+			i++;
+			titleWordFrequency.put(word, i);
+		} else {
+			titleWordFrequency.put(word, 1);
+		}
+	}
+
+	public int getWordFrequencyOfTitle(String word) {
+		if (titleWordFrequency.containsKey(word))
+			return titleWordFrequency.get(word);
+		else
+			return 0;
+	}
+
+	public void incrementBodyWordFrequency(String word) {
+
+		if (bodyWordFrequency.containsKey(word)) {
+			int i = bodyWordFrequency.get(word);
+			i++;
+			bodyWordFrequency.put(word, i);
+		} else {
+			bodyWordFrequency.put(word, 1);
+		}
+	}
+
+	public int getWordFrequencyOfBody(String word) {
+		if (bodyWordFrequency.containsKey(word))
+			return bodyWordFrequency.get(word);
 		else
 			return 0;
 	}

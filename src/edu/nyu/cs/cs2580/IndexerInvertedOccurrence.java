@@ -240,6 +240,20 @@ public class IndexerInvertedOccurrence extends Indexer {
 		stopWords.add("me");
 		stopWords.add("has");
 		stopWords.add("http");
+		stopWords.add("in");
+		stopWords.add("us");
+		stopWords.add("of");
+		stopWords.add("to");
+		stopWords.add("at");
+		stopWords.add("for");
+		stopWords.add("be");
+		stopWords.add("with");
+		stopWords.add("by");
+		stopWords.add("as");
+		stopWords.add("it");
+		stopWords.add("on");
+		
+		String title = Parser.getTitle(eachFile);
 		String newFile = Parser.parse(eachFile);
 		Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_30, stopWords);
 		List<String> words = tokenize(analyzer.tokenStream("",
