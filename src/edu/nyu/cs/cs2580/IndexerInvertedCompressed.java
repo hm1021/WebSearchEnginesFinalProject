@@ -36,6 +36,8 @@ public class IndexerInvertedCompressed extends Indexer {
 	private Map<String, WordAttribute_WordOccurrences> wordMapUncompressed = new HashMap<String, WordAttribute_WordOccurrences>();
 	private Map<Integer, Integer> numViewsMap = new HashMap<Integer, Integer>();
 	private Map<Integer, Float> pageRank = new HashMap<Integer, Float>();
+	private Map<Integer, Integer> inlinks = new HashMap<Integer, Integer>();
+	private Map<Integer, Integer> outlinks = new HashMap<Integer, Integer>();
 
 	public IndexerInvertedCompressed(Options options) {
 		super(options);
@@ -78,6 +80,9 @@ public class IndexerInvertedCompressed extends Indexer {
 			for (File eachFile : listOfFiles) {
 				int numViews = getNumViews(index, eachFile.getName());
 				float pageRank = getPageRank(index);
+				int inlink = getInlinks(index);
+				int outlink = getOutlinks(index);
+				
 				if (i >= noOfFiles / 20) {
 					serialize();
 					serializeDocMap(index, noOfFiles, h);
@@ -86,7 +91,7 @@ public class IndexerInvertedCompressed extends Indexer {
 					initializeMap();
 					h++;
 				}
-				analyse(eachFile, index, numViews, pageRank);
+				analyse(eachFile, index, numViews, pageRank, inlink, outlink);
 				index++;
 				i++;
 			}
@@ -113,22 +118,23 @@ public class IndexerInvertedCompressed extends Indexer {
 			DocumentIndexed docIndexed = docMap.get(doc);
 			aoos.write(docIndexed.getTitle() + "\t" + docIndexed.getUrl() + "\t");
 			aoos.write(docIndexed.getNumViews() + "\t" + docIndexed.getPageRank() + "\t");
+			aoos.write(docIndexed.getInlinks() + "\t" + docIndexed.getOutlinks() + "\t");
 
 			HashMap<String, Integer> wordFreq = docIndexed.getWordFrequency();
 			for (String word : wordFreq.keySet()) {
 				aoos.write(word + "\t");
 				aoos.write(wordFreq.get(word) + "\t");
 			}
-			
+
 			HashMap<String, Integer> wordFreqTitle = docIndexed.getTitleWordFrequency();
 			for (String word : wordFreqTitle.keySet()) {
 				aoos.write(word + "\t");
 				aoos.write(wordFreqTitle.get(word) + "\t");
 			}
-			
-			aoos.write(docIndexed.getTotalWords() + "\t");
-			aoos.write(docIndexed.getTotalWordsInTitle() + "\t");
-			aoos.write(docIndexed.getTotalWordsInBody() + "");
+
+			aoos.write(wordFreq.size() + "\t");
+			aoos.write(wordFreqTitle.size() + "\t");
+			aoos.write(wordFreq.size() + "");
 			aoos.newLine();
 		}
 		aoos.close();
@@ -152,6 +158,54 @@ public class IndexerInvertedCompressed extends Indexer {
 				String[] eachLine = o.split(" ");
 				int num = Integer.parseInt(eachLine[1]);
 				return num;
+			}
+			ois.close();
+		}
+		return 0;
+	}
+	
+	private int getInlinks(int index) throws IOException {
+		if (inlinks.containsKey(index))
+			return inlinks.get(index);
+		else {
+			List<String> commands = new ArrayList<String>();
+			commands.add("/bin/bash");
+			commands.add("-c");
+			commands.add("grep $'^" + index + "\t' " + _options._indexPrefix + "/" + "pageRanks.csv");
+			ProcessBuilder pb = new ProcessBuilder(commands);
+			Process p = pb.start();
+			BufferedReader ois = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+			String o = ois.readLine();
+			if (o != null) {
+				String[] eachLine = o.split(" ");
+				int rank = Integer.parseInt(eachLine[2]);
+				inlinks.put(index, rank);
+				return rank;
+			}
+			ois.close();
+		}
+		return 0;
+	}
+	
+	private int getOutlinks(int index) throws IOException {
+		if (outlinks.containsKey(index))
+			return outlinks.get(index);
+		else {
+			List<String> commands = new ArrayList<String>();
+			commands.add("/bin/bash");
+			commands.add("-c");
+			commands.add("grep $'^" + index + "\t' " + _options._indexPrefix + "/" + "pageRanks.csv");
+			ProcessBuilder pb = new ProcessBuilder(commands);
+			Process p = pb.start();
+			BufferedReader ois = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+			String o = ois.readLine();
+			if (o != null) {
+				String[] eachLine = o.split(" ");
+				int rank = Integer.parseInt(eachLine[3]);
+				outlinks.put(index, rank);
+				return rank;
 			}
 			ois.close();
 		}
@@ -325,13 +379,15 @@ public class IndexerInvertedCompressed extends Indexer {
 		}
 	}
 
-	private void analyse(File eachFile, int index, int numViews, float pageRank) throws IOException {
+	private void analyse(File eachFile, int index, int numViews, float pageRank, int inlink, int outlink) throws IOException {
 		_numDocs++;
 		DocumentIndexed docIndexed = new DocumentIndexed(index);
 		docIndexed.setTitle(eachFile.getName());
 		docIndexed.setUrl(eachFile.getPath());
 		docIndexed.setNumViews(numViews);
 		docIndexed.setPageRank(pageRank);
+		docIndexed.setInlinks(inlink);
+		docIndexed.setOutlinks(outlink);
 
 		HashSet<String> stopWords = new HashSet<String>();
 		stopWords.add("the");
@@ -363,32 +419,43 @@ public class IndexerInvertedCompressed extends Indexer {
 		stopWords.add("on");
 
 		String title = Parser.getTitle(eachFile);
-		Analyzer analyzer_title = new EnglishAnalyzer(Version.LUCENE_30, stopWords);
-		List<String> titleWords = tokenize(analyzer_title.tokenStream("", new StringReader(title)));
-		docIndexed.setTotalWordsInTitle(titleWords.size());
+		int title_length = 0;
+		if (title != null) {
+			Analyzer analyzer_title = new EnglishAnalyzer(Version.LUCENE_30, stopWords);
+			List<String> titleWords = tokenize(analyzer_title.tokenStream("", new StringReader(title)));
+			title_length = titleWords.size();
+			
+			
+			int titleWordsLength = 0;
+			for (String word : titleWords) {
+				if (word.length() == 1)
+					continue;
 
-		for (String word : titleWords) {
-			if (word.length() == 1)
-				continue;
-
-			String stemmed = Stemmer.stemAWord(word).trim();
-			if (stemmed.matches("[A-Za-z0-9]+")) {
-				docIndexed.incrementTitleWordFrequency(word);
+				String stemmed = Stemmer.stemAWord(word).trim();
+				if (stemmed.matches("[A-Za-z0-9]+")) {
+					docIndexed.incrementTitleWordFrequency(word);
+					titleWordsLength++;
+				}
 			}
+			docIndexed.setTotalWordsInTitle(titleWordsLength);
+			analyzer_title.close();
 		}
+		
 
 		String newFile = Parser.parse(eachFile);
 		Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_30, stopWords);
 		List<String> words = tokenize(analyzer.tokenStream("", new StringReader(newFile)));
-		docIndexed.setTotalWordsInBody(words.size() - titleWords.size());
+		docIndexed.setTotalWordsInBody(words.size() - title_length);
 
 		int i = 0;
+		int totalWords = 0;
 		for (String word : words) {
 			if (word.length() == 1)
 				continue;
 
 			String stemmed = Stemmer.stemAWord(word).trim();
 			if (stemmed.matches("[A-Za-z0-9]+")) {
+				totalWords++;
 				docIndexed.incrementWordFrequency(stemmed);
 				_totalTermFrequency++;
 				int hash = Math.abs(stemmed.hashCode()) % 199;
@@ -430,8 +497,8 @@ public class IndexerInvertedCompressed extends Indexer {
 
 		}
 		analyzer.close();
-		analyzer_title.close();
-		docIndexed.setTotalWords(words.size());
+		
+		docIndexed.setTotalWords(totalWords);
 		docMap.put(index, docIndexed);
 	}
 
@@ -562,6 +629,8 @@ public class IndexerInvertedCompressed extends Indexer {
 			String url = eachLine[2];
 			int numViews = Integer.parseInt(eachLine[3]);
 			float pageRank = Float.parseFloat(eachLine[4]);
+			int inlink = Integer.parseInt(eachLine[5]);
+			int outlink = Integer.parseInt(eachLine[6]);
 			long numWordsInTitle = Integer.parseInt(eachLine[eachLine.length - 2]);
 			long numWordsInBody = Integer.parseInt(eachLine[eachLine.length - 1]);
 			long totalWords = Integer.parseInt(eachLine[eachLine.length - 3]);
@@ -570,12 +639,14 @@ public class IndexerInvertedCompressed extends Indexer {
 			wa.setTotalWords(totalWords);
 			wa.setNumViews(numViews);
 			wa.setPageRank(pageRank);
+			wa.setInlinks(inlink);
+			wa.setOutlinks(outlink);
 			wa.setTotalWordsInTitle(numWordsInTitle);
 			wa.setTotalWordsInBody(numWordsInBody);
 
 			HashMap<String, Integer> temp_map = new HashMap<String, Integer>();
 
-			int index = 5;
+			int index = 7;
 			int i = 0;
 			while (i < totalWords) {
 				String temp_word = eachLine[index];
@@ -585,10 +656,10 @@ public class IndexerInvertedCompressed extends Indexer {
 				i++;
 				temp_map.put(temp_word, temp_freq);
 			}
-			
+
 			HashMap<String, Integer> temp_mapTitle = new HashMap<String, Integer>();
 			i = 0;
-			while(i < numWordsInTitle) {
+			while (i < numWordsInTitle) {
 				String temp_word = eachLine[index];
 				index++;
 				int temp_freq = Integer.parseInt(eachLine[index]);
@@ -825,25 +896,26 @@ public class IndexerInvertedCompressed extends Indexer {
 				String url = eachLine[2];
 				int numViews = Integer.parseInt(eachLine[3]);
 				float pageRank = Float.parseFloat(eachLine[4]);
+				int inlink = Integer.parseInt(eachLine[5]);
+				int outlink = Integer.parseInt(eachLine[6]);
 				long numWordsInTitle = Integer.parseInt(eachLine[eachLine.length - 2]);
 				long numWordsInBody = Integer.parseInt(eachLine[eachLine.length - 1]);
-
-
+				int totalWords = Integer.parseInt(eachLine[eachLine.length - 3]);
 				HashMap<String, Integer> temp_map = new HashMap<String, Integer>();
 
-				int index = 5;
+				int index = 7;
 				int i = 0;
-				while (index < eachLine.length - 3) {
+				while (index < totalWords) {
 					String temp_word = eachLine[index];
 					index++;
 					int temp_freq = Integer.parseInt(eachLine[index]);
 					index++;
 					temp_map.put(temp_word, temp_freq);
 				}
-				
+
 				HashMap<String, Integer> temp_mapTitle = new HashMap<String, Integer>();
 				i = 0;
-				while(i < numWordsInTitle) {
+				while (i < numWordsInTitle) {
 					String temp_word = eachLine[index];
 					index++;
 					int temp_freq = Integer.parseInt(eachLine[index]);
@@ -852,18 +924,20 @@ public class IndexerInvertedCompressed extends Indexer {
 					temp_mapTitle.put(temp_word, temp_freq);
 				}
 
-				int totalWords = Integer.parseInt(eachLine[eachLine.length - 3]);
 				
+
 				wa.setTitle(title);
 				wa.setUrl(url);
 				wa.setTotalWords(totalWords);
 				wa.setNumViews(numViews);
 				wa.setPageRank(pageRank);
+				wa.setInlinks(inlink);
+				wa.setOutlinks(outlink);
 				wa.setWordFrequency(temp_map);
 				wa.setTotalWordsInTitle(numWordsInTitle);
 				wa.setTotalWordsInBody(numWordsInBody);
 				wa.setTitleWordFrequency(temp_mapTitle);
-				
+
 				docMap.put(docid, wa);
 			}
 			ois.close();

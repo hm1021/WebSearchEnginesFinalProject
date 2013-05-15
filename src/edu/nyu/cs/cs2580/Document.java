@@ -68,6 +68,24 @@ class Document implements Serializable {
 	// Basic information for ranking
 	private float _pageRank = 0.0f;
 	private int _numViews = 0;
+	private int _inlinks = 0;
+	private int _outlinks = 0;
+
+	public int getInlinks() {
+		return _inlinks;
+	}
+
+	public void setInlinks(int _inlinks) {
+		this._inlinks = _inlinks;
+	}
+
+	public int getOutlinks() {
+		return _outlinks;
+	}
+
+	public void setOutlinks(int _outlinks) {
+		this._outlinks = _outlinks;
+	}
 
 	public Document(int docid) {
 		_docid = docid;
